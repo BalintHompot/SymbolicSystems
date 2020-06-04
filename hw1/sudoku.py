@@ -45,7 +45,7 @@ def main():
         if verbose:
             print("Solving sudoku using the SAT encoding..");
             timer.start();
-        with suppress_stdout_stderr():
+        #with suppress_stdout_stderr():
             solved_sudoku = solve_sudoku_SAT(sudoku,k);
         if verbose:
             timer.stop();
@@ -54,7 +54,7 @@ def main():
         if verbose:
             print("Solving sudoku using the CSP encoding..");
             timer.start();
-        with suppress_stdout_stderr():
+        #with suppress_stdout_stderr():
             solved_sudoku = solve_sudoku_CSP(sudoku,k);
         if verbose:
             timer.stop();
@@ -63,7 +63,7 @@ def main():
         if verbose:
             print("Solving sudoku using the ASP encoding..");
             timer.start();
-        with suppress_stdout_stderr():
+        #with suppress_stdout_stderr():
             solved_sudoku = solve_sudoku_ASP(sudoku,k);
         if verbose:
             timer.stop();
@@ -72,7 +72,7 @@ def main():
         if verbose:
             print("Solving sudoku using the ILP encoding..");
             timer.start();
-        with suppress_stdout_stderr():
+        #with suppress_stdout_stderr():
             solved_sudoku = solve_sudoku_ILP(sudoku,k);
         if verbose:
             timer.stop();
@@ -81,7 +81,7 @@ def main():
         if verbose:
             print("Solving sudoku using recursion and propagation..");
             timer.start();
-        with suppress_stdout_stderr():
+        #with suppress_stdout_stderr():
             solved_sudoku = solve_sudoku_prop(sudoku,k);
         if verbose:
             timer.stop();
