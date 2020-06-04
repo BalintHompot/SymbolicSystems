@@ -52,10 +52,12 @@ def remove_value(sudoku_possible_values, rowInd, colInd, to_remove, k):
 ###
 def solve_sudoku_SAT(sudoku,k):
 
+    ### note: this solution assumes that we don't go over 2 digits in the size/numbers (so works up to 9*9 units)
+
     from pysat.formula import CNF
     from pysat.solvers import MinisatGH
 
-    ## constraint id is calculated as follows: concatenate row num, col num and value   
+    ## constraint id is calculated as follows: concatenate row num, col num and value, padded two 2 digits   
 
     solver = MinisatGH()
     ## GENERAL SUDOKU RULES
@@ -136,7 +138,6 @@ def solve_sudoku_SAT(sudoku,k):
         return sudoku
 
 def pad_str(i):
-
     s = str(i)
     if len(s) < 2:
         s = "0" + s
@@ -146,7 +147,45 @@ def pad_str(i):
 ### Solver that uses CSP encoding
 ###
 def solve_sudoku_CSP(sudoku,k):
-    return None;
+    from ortools.sat.python import cp_model
+    model = cp_model.CpModel()
+    ## constraint id is calculated as follows: concatenate row num, col num, padded two 2 digits   
+    var_matrix = [[0 for j in range(k*k)] for i in range(k*k)]
+    for rowInd in range(k*k):
+        for colInd in range(k*k):
+            var_matrix[rowInd][colInd] = model.NewIntVar(1,k*k,pad_str(rowInd+1) + pad_str(colInd+1))
+
+    ## adding: row rules
+    for rowInd in range(k*k):
+        model.AddAllDifferent([var_matrix[rowInd][colInd] for colInd in range(k*k)])    
+
+    ## adding: col rules
+    for colInd in range(k*k):
+        model.AddAllDifferent([var_matrix[rowInd][colInd] for rowInd in range(k*k)])    
+    ## adding: box rules
+    for rowStart in range(0,k*k,k):
+        for colStart in range(0,k*k,k):
+            box_vars = []
+            for rowInd in range(rowStart, rowStart+k):
+                for colInd in range(colStart, colStart+k):
+                    box_vars.append(var_matrix[rowInd][colInd])
+            model.AddAllDifferent(box_vars)
+
+    ## adding input values as constraints
+    for rowInd in range(k*k):
+        for colInd in range(k*k):
+            if sudoku[rowInd][colInd] != 0:
+                model.Add(var_matrix[rowInd][colInd] == sudoku[rowInd][colInd])
+    ## solving model
+    solver = cp_model.CpSolver();
+    answer = solver.Solve(model);
+
+    ## reconstructing sudoku
+    for rowInd in range(k*k):
+        for colInd in range(k*k):
+            sudoku[rowInd][colInd] = solver.Value(var_matrix[rowInd][colInd])
+
+    return sudoku;
 
 ###
 ### Solver that uses ASP encoding
