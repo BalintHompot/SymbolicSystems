@@ -155,14 +155,21 @@ def solve_sudoku_CSP(sudoku,k):
         for colInd in range(k*k):
             var_matrix[rowInd][colInd] = model.NewIntVar(1,k*k,pad_str(rowInd+1) + pad_str(colInd+1))
 
+    ## note: non-equality constraint is a lot more efficient than alldif
     ## adding: row rules
     for rowInd in range(k*k):
-        model.AddAllDifferent([var_matrix[rowInd][colInd] for colInd in range(k*k)])    
+        for colIndOne in range(k*k-1):
+            for colIndTwo in range(colIndOne+1, k*k):
+                model.Add(var_matrix[rowInd][colIndOne]!=var_matrix[rowInd][colIndTwo])
 
     ## adding: col rules
     for colInd in range(k*k):
-        model.AddAllDifferent([var_matrix[rowInd][colInd] for rowInd in range(k*k)])    
+        for rowIndOne in range(k*k-1):
+            for rowIndTwo in range(rowIndOne+1, k*k):
+                model.Add(var_matrix[rowIndOne][colInd]!=var_matrix[rowIndTwo][colInd])
+
     ## adding: box rules
+    ## here i use alldif for simplicity
     for rowStart in range(0,k*k,k):
         for colStart in range(0,k*k,k):
             box_vars = []
