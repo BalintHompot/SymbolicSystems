@@ -149,13 +149,13 @@ def pad_str(i):
 def solve_sudoku_CSP(sudoku,k):
     from ortools.sat.python import cp_model
     model = cp_model.CpModel()
-    ## constraint id is calculated as follows: concatenate row num, col num, padded two 2 digits   
+    ## constraints stored in a matrix of same format as the sudoku itself
     var_matrix = [[0 for j in range(k*k)] for i in range(k*k)]
     for rowInd in range(k*k):
         for colInd in range(k*k):
             var_matrix[rowInd][colInd] = model.NewIntVar(1,k*k,pad_str(rowInd+1) + pad_str(colInd+1))
 
-    ## note: non-equality constraint is a lot more efficient than alldif
+    ## note: pairwise non-equality constraint is a lot more efficient than alldif
     ## adding: row rules
     for rowInd in range(k*k):
         for colIndOne in range(k*k-1):
@@ -204,4 +204,64 @@ def solve_sudoku_ASP(sudoku,k):
 ### Solver that uses ILP encoding
 ###
 def solve_sudoku_ILP(sudoku,k):
-    return None;
+    import gurobipy as gp
+    from gurobipy import GRB
+    model = gp.Model()
+
+
+    ### adding vars in a matrix
+    var_matrix = [[0 for j in range(k*k)] for i in range(k*k)]
+    for rowInd in range(k*k):
+        for colInd in range(k*k):
+            var_matrix[rowInd][colInd] = model.addVars(k*k, vtype = 'I', name = str(rowInd)+ "_" + str(colInd))
+    
+
+    ## every cell should have one value
+    for rowInd in range(k*k):
+        for colInd in range(k*k):
+            model.addConstr(gp.quicksum([var_matrix[rowInd][colInd][i] for i in range(k*k)]) == 1, "constr_row" + str(rowInd) + "_col" + str(colInd))
+
+    ## adding: row constraints
+    for rowInd in range(k*k):
+
+        ## everything should appear once
+        for possible_value in range(k*k):
+            model.addConstr(gp.quicksum([var_matrix[rowInd][i][possible_value] for i in range(k*k)]) == 1, "constr_row" + str(rowInd) + "_val" + str(possible_value))
+
+    ## adding: col constraints
+    for colInd in range(k*k):
+
+        ## everything should appear once
+        for possible_value in range(k*k):
+            model.addConstr(gp.quicksum([var_matrix[i][colInd][possible_value] for i in range(k*k)]) == 1, "constr_col" + str(colInd) + "_val" + str(possible_value))
+
+    ## addong: box constraints
+    for rowStart in range(0,k*k,k):
+        for colStart in range(0,k*k,k):
+            box_vars = []
+            for rowInd in range(rowStart, rowStart+k):
+                for colInd in range(colStart, colStart+k):
+                    box_vars.append(var_matrix[rowInd][colInd])
+            for possible_value in range(k*k):
+                model.addConstr(gp.quicksum([box_vars[i][possible_value] for i in range(k*k)]) == 1, "constr_box" + str(rowStart) + str(colStart) + "_val" + str(possible_value))
+
+
+    ## adding input constraints
+    for rowInd in range(k*k):
+        for colInd in range(k*k):
+            if sudoku[rowInd][colInd] != 0:
+                model.addConstr(var_matrix[rowInd][colInd][sudoku[rowInd][colInd]-1] == 1, "constr_input_" + str(rowInd) + str(colInd))
+
+
+
+    model.optimize();
+    ### reconstructing sudoku
+    if model.status == GRB.OPTIMAL:
+        for v in model.getVars():
+            if int(v.x) != 0:
+                name_split = v.varName.split("[")
+                ind_split = name_split[0].split("_")
+                sudoku[int(ind_split[0])][int(ind_split[1])] = int(name_split[1][:-1])+1
+    else:
+        sudoku = None
+    return sudoku
