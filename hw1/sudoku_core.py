@@ -5,18 +5,30 @@ from copy import deepcopy
 ###
 
 def propagate(sudoku_possible_values, k):
-    ### approach: simply removing values that are solved/guessed from the other's domains in row, col and box
+    ###Approach: 
+    # simply removing values that are solved/guessed from the other's domains in row, col and box
+    # looping in straight order through the sudoku first, then in reverse (cause we don't look back if there is a cell with single value after removing for a cell)
+    # note: instead of reversing it could be more efficient if we checked all cells after a removal
+    # however, the solution is still quite efficient without these, and the code would be more complex
 
-    sudoku_possible_values_copy = deepcopy(sudoku_possible_values)      ## copy so the original is not getting overwritten
     for rowInd in range(k*k):
         for colInd in range(k*k):
             ### checking for solved/guessed cell (number of possible values is 1)
             if len(sudoku_possible_values[rowInd][colInd]) == 1:
                 to_remove = sudoku_possible_values[rowInd][colInd][0]
                 #removing from row, col and box values
-                sudoku_possible_values_copy = remove_value(sudoku_possible_values_copy, rowInd, colInd, to_remove, k)
+                sudoku_possible_values = remove_value(sudoku_possible_values, rowInd, colInd, to_remove, k)
+    
+    ## doing the same in reverse order
+    for rowInd in reversed(range(k*k)):
+        for colInd in reversed(range(k*k)):
+            ### checking for solved/guessed cell (number of possible values is 1)
+            if len(sudoku_possible_values[rowInd][colInd]) == 1:
+                to_remove = sudoku_possible_values[rowInd][colInd][0]
+                #removing from row, col and box values
+                sudoku_possible_values = remove_value(sudoku_possible_values, rowInd, colInd, to_remove, k)
 
-    return sudoku_possible_values_copy
+    return sudoku_possible_values
 
 def remove_value(sudoku_possible_values, rowInd, colInd, to_remove, k):
     ### removing values that are already solved or guessed (=their possible values has only 1 option)
